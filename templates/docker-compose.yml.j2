@@ -1,0 +1,85 @@
+services:
+  traefik:
+    image: {{ traefik_image }}:{{ traefik_version }}
+    container_name: traefik
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+      - "/root/docker/traefik/acme.json:/acme.json"
+      - "/root/docker/traefik/htpasswd:/etc/traefik/htpasswd"
+    command:
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge=true"
+      - "--certificatesresolvers.myresolver.acme.httpchallenge.entrypoint=web"
+      - "--certificatesresolvers.myresolver.acme.email={{ traefik_email }}"
+      - "--certificatesresolvers.myresolver.acme.storage=/acme.json"
+      - "--api.dashboard=true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.traefik.rule=Host(`{{ traefik_domain }}`)"
+      - "traefik.http.routers.api.rule=Host(`{{ traefik_domain }}`)"
+      - "traefik.http.routers.traefik.entrypoints=websecure"
+      - "traefik.http.routers.traefik.tls.certresolver=myresolver"
+      - "traefik.http.routers.traefik.service=api@internal"
+      - "traefik.http.routers.traefik.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/htpasswd"
+    networks:
+      - web
+      - internal
+    restart: unless-stopped
+
+  wiki:
+    image: {{ wiki_image }}:{{ wiki_version }}
+    container_name: wiki
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Moscow
+      - DB_TYPE=sqlite
+    volumes:
+      - /root/docker/wiki/config:/config
+      - /root/docker/wiki/data:/data
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.wiki.rule=Host(`{{ wiki_domain }}`) && !Path(`/login`)"
+      - "traefik.http.routers.wiki.tls=true"
+      - "traefik.http.routers.wiki.entrypoints=websecure"
+      - "traefik.http.routers.wiki.tls.certresolver=myresolver"
+      - "traefik.http.services.wiki.loadbalancer.server.port=3000"
+      - "traefik.http.routers.wiki-auth.rule=Host(`{{ wiki_domain }}`) && Path(`/login`)"
+      - "traefik.http.routers.wiki-auth.middlewares=auth"
+      - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/htpasswd"
+      - "traefik.http.routers.wiki-auth.tls=true"
+      - "traefik.http.routers.wiki-auth.tls.certresolver=myresolver"
+    networks:
+      - web
+      - internal
+    restart: unless-stopped
+
+  postfix:
+    container_name: postfix
+    image: boky/postfix
+    environment:
+      - ALLOWED_SENDER_DOMAINS={{ mail_domain }}
+      - POSTFIX_myhostname={{ mail_domain }}
+      - POSTFIX_mynetworks=172.28.0.0/16
+    volumes:
+      - "/root/docker/postfix/keys:/etc/opendkim/keys"
+    labels:
+      - "traefik.enable=false"
+    networks:
+      - internal
+    restart: unless-stopped
+
+networks:
+  web:
+    external: true
+  internal:
+    external: false

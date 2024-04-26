@@ -1,0 +1,13 @@
+---
+wiki_image: linuxserver/wikijs
+wiki_version: latest
+wiki_domain: wiki.example.com
+
+mail_domain: mail.example.com
+
+traefik_image: traefik
+traefik_version: 2.11.2
+traefik_domain: monitor.example.com
+traefik_email: email@example.com
+traefik_username: yourusername
+traefik_password: yourpassword

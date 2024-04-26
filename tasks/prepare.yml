@@ -1,0 +1,26 @@
+---
+  - name: Ensure htpasswd is installed
+    package:
+      name: apache2-utils
+      state: present
+
+  - name: Create directories
+    file:
+      path: "{{ item }}"
+      state: directory
+    loop:
+      - /root/docker/wiki/config
+      - /root/docker/wiki/data
+      - /root/docker/traefik
+      - /root/docker/postfix/keys
+
+  - name: Create acme.json and set permissions
+    copy:
+      content: ""
+      dest: /root/docker/traefik/acme.json
+      mode: '0600'
+    notify: Restart Traefik
+
+  - name: Generate htpasswd file
+    command:
+      cmd: htpasswd -cb /root/docker/traefik/htpasswd {{ traefik_username }} {{ traefik_password }}
