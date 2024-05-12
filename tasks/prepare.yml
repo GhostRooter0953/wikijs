@@ -24,3 +24,11 @@
   - name: Generate htpasswd file
     command:
       cmd: htpasswd -cb /root/docker/traefik/htpasswd {{ traefik_username }} {{ traefik_password }}
+
+  - name: Create Docker subnet
+    docker_network:
+      name: web
+      driver: bridge
+      ipam_config:
+        - subnet: "{{ docker_subnet }}"
+      state: present

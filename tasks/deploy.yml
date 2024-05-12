@@ -10,3 +10,10 @@
       cmd: docker compose up -d
       chdir: /root/docker
     tags: update
+
+#  - name: Clear Docker garbage
+#    docker_prune:
+#      containers: yes
+#      images: yes
+#      networks: yes
+#      volumes: yes

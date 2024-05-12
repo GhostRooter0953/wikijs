@@ -33,8 +33,22 @@ services:
       - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/htpasswd"
     networks:
       - web
-      - internal
     restart: unless-stopped
+
+{% if not use_sqlite %}
+  postgres:
+    image: {{ postgres_image }}:{{ postgres_version }}
+    container_name: postgres
+    environment:
+      - POSTGRES_DB={{ db_name }}
+      - POSTGRES_USER={{ db_user }}
+      - POSTGRES_PASSWORD={{ db_password }}
+    volumes:
+      - /root/docker/postgres/data:/var/lib/postgresql/data
+    networks:
+      - web
+    restart: unless-stopped
+{% endif %}
 
   wiki:
     image: {{ wiki_image }}:{{ wiki_version }}
@@ -44,7 +58,16 @@ services:
       - PUID=1000
       - PGID=1000
       - TZ=Europe/Moscow
+{% if not use_sqlite %}
+      - DB_TYPE=postgres
+      - DB_HOST={{ db_host }}
+      - DB_PORT={{ db_port }}
+      - DB_USER={{ db_user }}
+      - DB_PASS={{ db_password }}
+      - DB_NAME={{ db_name }}
+{% else %}
       - DB_TYPE=sqlite
+{% endif %}
     volumes:
       - /root/docker/wiki/config:/config
       - /root/docker/wiki/data:/data
@@ -60,9 +83,12 @@ services:
       - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/htpasswd"
       - "traefik.http.routers.wiki-auth.tls=true"
       - "traefik.http.routers.wiki-auth.tls.certresolver=myresolver"
+{% if not use_sqlite %}
+    depends_on:
+      - postgres
+{% endif %}
     networks:
       - web
-      - internal
     restart: unless-stopped
 
   postfix:
@@ -72,17 +98,15 @@ services:
     environment:
       - ALLOWED_SENDER_DOMAINS={{ mail_domain }}
       - POSTFIX_myhostname={{ mail_domain }}
-      - POSTFIX_mynetworks=172.28.0.0/16
+      - POSTFIX_mynetworks={{ docker_subnet }}
     volumes:
       - "/root/docker/postfix/keys:/etc/opendkim/keys"
     labels:
       - "traefik.enable=false"
     networks:
-      - internal
+      - web
     restart: unless-stopped
 
 networks:
   web:
     external: true
-  internal:
-    external: false

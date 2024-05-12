@@ -11,3 +11,16 @@ traefik_domain: monitor.example.com
 traefik_email: email@example.com
 traefik_username: yourusername
 traefik_password: yourpassword
+
+docker_subnet: 172.22.0.0/16
+
+use_sqlite: true
+
+db_user: yourusername
+db_password: yourpassword
+db_port: 5432
+db_host: postgres
+db_name: wiki
+
+postgres_image: postgres
+postgres_version: latest
