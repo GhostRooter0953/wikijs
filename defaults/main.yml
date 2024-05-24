@@ -24,3 +24,11 @@ db_name: wiki
 
 postgres_image: postgres
 postgres_version: latest
+
+use_pgadm: false
+
+pgadm_image: dpage/pgadmin4
+pgadm_version: latest
+pgadm_domain: pgadm.example.com
+pgadm_email: email@example.com
+pgadm_password: yourpassword
