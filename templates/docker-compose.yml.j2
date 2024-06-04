@@ -103,16 +103,11 @@ services:
       - /root/docker/wiki/git:/git
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.wiki.rule=Host(`{{ wiki_domain }}`) && !Path(`/login`)"
+      - "traefik.http.routers.wiki.rule=Host(`{{ wiki_domain }}`)"
       - "traefik.http.routers.wiki.tls=true"
       - "traefik.http.routers.wiki.entrypoints=websecure"
       - "traefik.http.routers.wiki.tls.certresolver=myresolver"
       - "traefik.http.services.wiki.loadbalancer.server.port=3000"
-      - "traefik.http.routers.wiki-auth.rule=Host(`{{ wiki_domain }}`) && Path(`/login`)"
-      - "traefik.http.routers.wiki-auth.middlewares=auth"
-      - "traefik.http.middlewares.auth.basicauth.usersfile=/etc/traefik/htpasswd"
-      - "traefik.http.routers.wiki-auth.tls=true"
-      - "traefik.http.routers.wiki-auth.tls.certresolver=myresolver"
 {% if not use_sqlite %}
     depends_on:
       - postgres
